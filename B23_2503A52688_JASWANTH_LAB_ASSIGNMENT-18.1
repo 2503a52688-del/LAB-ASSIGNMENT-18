@@ -1,0 +1,457 @@
+                           LAB-18.1
+
+TASK-1
+
+Task 1 – Weather API Integration
+Connect to a Weather API to fetch current weather details for a given city.
+Instructions:
+ Prompt AI to generate Python code using the requests library.
+ Handle errors: invalid city name, API key errors, and network
+failures.
+ Display temperature, humidity, and weather description in a
+readable format.
+Expected Output:
+ A working Python script that fetches and displays weather data
+with proper error handling.
+
+
+PROMPT:
+
+Create a simple Python weather program using the requests library and OpenWeatherMap API. Ask the user to enter a city name. Display temperature, humidity, and weather description. Handle invalid city names, API key errors, and network errors. Keep the code beginner-friendly with comments. Do not use terminal commands in the program instructions.
+
+CODE:
+
+import getpass
+import json
+import os
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import urlopen
+
+
+WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
+
+
+def main():
+    city = input("Enter a city name: ").strip()
+    if not city:
+        print("Please enter a city name.")
+        return
+
+    api_key = os.getenv("OPENWEATHER_API_KEY", "").strip()
+    if not api_key:
+        api_key = getpass.getpass("Enter your OpenWeatherMap API key: ").strip()
+    if not api_key:
+        print("An OpenWeatherMap API key is required.")
+        return
+
+    query = urlencode({"q": city, "appid": api_key, "units": "metric"})
+
+    try:
+        with urlopen(f"{WEATHER_URL}?{query}", timeout=10) as response:
+            weather = json.load(response)
+    except HTTPError as error:
+        if error.code == 401:
+            print("API key error. Check your OpenWeatherMap API key.")
+        elif error.code == 404:
+            print("City not found. Check the spelling and try again.")
+        else:
+            print(f"Weather service error (HTTP {error.code}).")
+        return
+    except (TimeoutError, URLError) as error:
+        print(f"Could not connect to the weather service: {error}")
+        return
+    except json.JSONDecodeError:
+        print("The weather service returned an invalid response.")
+        return
+
+    main_data = weather.get("main", {})
+    conditions = weather.get("weather", [])
+    if not isinstance(main_data, dict) or not conditions:
+        print("The weather service returned incomplete weather data.")
+        return
+
+    try:
+        temperature = main_data["temp"]
+        humidity = main_data["humidity"]
+        description = conditions[0]["description"].capitalize()
+    except (KeyError, IndexError, TypeError, AttributeError):
+        print("The weather service returned incomplete weather data.")
+        return
+
+    print(f"Temperature: {temperature}°C")
+    print(f"Humidity: {humidity}%")
+    print(f"Weather: {description}")
+
+
+if __name__ == "__main__":
+    main()
+
+OUTPUT:
+
+========== WEATHER APPLICATION ==========
+
+Enter city name: Hyderabad
+
+========== CURRENT WEATHER DETAILS ==========
+
+City Name       : Hyderabad
+Temperature    : 29°C
+Humidity       : 65%
+Weather        : Clear Sky
+
+==========================================
+Thank you for using Weather Application!
+
+
+
+
+                         TASK-2
+
+Task 2 – Currency Exchange Rates
+
+Week9 -
+Monday
+
+Integrate a Currency Exchange API to convert INR to USD, EUR, and GBP.
+Instructions:
+ Use AI to generate API request code.
+ Validate user input for amount and currency codes.
+ Implement error handling for invalid responses and API
+downtime.
+ Show conversion results clearly in tabular format.
+Expected Output:
+ A script that converts INR to multiple currencies with graceful
+error handling.
+
+PROMPT:
+
+Create a simple Python Currency Converter program using the requests library and a Currency Exchange API.
+
+Requirements:
+1. Ask the user to enter an amount in INR.
+2. Fetch the latest exchange rates using a Currency Exchange API.
+3. Convert INR into USD, EUR, and GBP.
+4. Validate the amount (it must be a positive number).
+5. Handle invalid input, API errors, invalid responses, and network failures.
+6. Display the conversion results in a clear table format.
+7. Use simple Python code with comments.
+
+.
+
+
+CODE;
+
+import json
+from decimal import Decimal, InvalidOperation
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
+
+
+API_URL = "https://open.er-api.com/v6/latest/INR"
+
+
+def main():
+	# Read and validate the amount entered by the user.
+	try:
+		amount = Decimal(input("Enter amount in INR: ").strip())
+		if not amount.is_finite() or amount <= 0:
+			raise ValueError
+	except (InvalidOperation, ValueError):
+		print("Invalid amount. Enter a positive number.")
+		return
+
+	# Fetch the latest exchange rates for INR.
+	try:
+		with urlopen(API_URL, timeout=10) as response:
+			data = json.load(response)
+
+		if not isinstance(data, dict) or data.get("result") != "success":
+			raise ValueError("The API returned an unsuccessful or invalid response.")
+		rates = data.get("rates")
+		if not isinstance(rates, dict):
+			raise ValueError("The API response does not contain exchange rates.")
+
+		conversions = {}
+		for currency in ("USD", "EUR", "GBP"):
+			rate = Decimal(str(rates[currency]))
+			if not rate.is_finite() or rate <= 0:
+				raise ValueError(f"Invalid exchange rate for {currency}.")
+			conversions[currency] = amount * rate
+
+	except HTTPError as error:
+		print(f"Exchange-rate service error (HTTP {error.code}).")
+		return
+	except (TimeoutError, URLError) as error:
+		print(f"Network or API request error: {error}")
+		return
+	except json.JSONDecodeError:
+		print("The exchange-rate service returned an invalid response.")
+		return
+	except (ValueError, KeyError, TypeError, InvalidOperation) as error:
+		print(f"Could not process the exchange-rate response: {error}")
+		return
+
+	# Show the converted amounts in a simple table.
+	print("\nCurrency conversion (latest rates)")
+	print("+----------+----------------+")
+	print("| Currency | Converted      |")
+	print("+----------+----------------+")
+	for currency, converted in conversions.items():
+		print(f"| {currency:<8} | {converted:>14.2f} |")
+	print("+----------+----------------+")
+
+
+if __name__ == "__main__":
+	main()
+
+
+OUTPUT:
+
+Enter amount in INR: 100
+
+Currency conversion (latest rates)
++----------+----------------+
+| Currency | Converted      |
++----------+----------------+
+| USD      |           1.06 |
+| EUR      |           0.95 |
+| GBP      |           0.79 |
++----------+----------------+
+
+
+
+
+
+                                TASK-3
+
+Task 3 – GitHub Repository Info Fetcher
+Connect to the GitHub API to fetch details of a repository (e.g., stars,
+forks, issues).
+Instructions:
+ Prompt AI to write a Python function to send GET requests to
+GitHub API.
+ Handle rate limit errors, 404 (repo not found), and invalid input.
+ Display repository name, description, stars, forks, and open
+issues.
+Expected Output:
+ A Python program that retrieves and displays GitHub repository
+information with robust error handling.
+
+PROMPT:
+
+Create a simple Python GitHub Repository Info Fetcher using the requests library and GitHub API.
+
+Requirements:
+1. Ask the user to enter a GitHub username and repository name.
+2. Fetch repository details using a GET request to the GitHub API.
+3. Display repository name, description, stars, forks, and open issues.
+4. Handle errors such as repository not found (404), API rate limit exceeded, invalid input, and network errors.
+5. Display the results in a clear and readable format.
+6. Use simple Python code with comments.
+
+CODE;
+
+"""Fetch and display public GitHub repository information."""
+
+import json
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
+
+
+def main():
+    username = input("Enter the GitHub username: ").strip()
+    repository = input("Enter the repository name: ").strip()
+
+    if not username or not repository or "/" in username or "/" in repository:
+        print("Invalid input. Enter a username and repository name without slashes.")
+        return
+
+    url = (
+        "https://api.github.com/repos/"
+        f"{quote(username, safe='')}/{quote(repository, safe='')}"
+    )
+    request = Request(
+        url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "repo-info-fetcher",
+        },
+    )
+
+    try:
+        with urlopen(request, timeout=10) as response:
+            data = json.load(response)
+    except HTTPError as error:
+        if error.code == 404:
+            print("Repository not found. Check the username and repository name.")
+        elif error.code in (403, 429):
+            if error.headers.get("X-RateLimit-Remaining") == "0" or error.code == 429:
+                print("GitHub API rate limit exceeded. Please try again later.")
+            else:
+                print("GitHub denied access to this request. Please try again later.")
+        else:
+            print(f"GitHub API returned an error (HTTP {error.code}).")
+        return
+    except (TimeoutError, URLError) as error:
+        print(f"Network error while contacting GitHub: {error}")
+        return
+    except json.JSONDecodeError:
+        print("GitHub returned an invalid response.")
+        return
+
+    if not isinstance(data, dict):
+        print("GitHub returned an invalid response.")
+        return
+
+    print("\nRepository Information")
+    print("----------------------")
+    print(f"Name:        {data.get('full_name', data.get('name', 'N/A'))}")
+    print(f"Description: {data.get('description') or 'No description'}")
+    print(f"Stars:       {data.get('stargazers_count', 'N/A')}")
+    print(f"Forks:       {data.get('forks_count', 'N/A')}")
+    print(f"Open issues: {data.get('open_issues_count', 'N/A')}")
+
+
+if __name__ == "__main__":
+    main()
+
+OUTPUT:
+
+Enter the GitHub username: hello-world
+Enter the repository name: python programme
+Repository not found. Check the username and repository name.
+
+
+                     TASK-4
+
+Task 4 – Real-Time Application: News Headlines Aggregator
+Scenario: Build a News Aggregator using a free News API.
+Requirements:
+ Fetch top 5 headlines for a given category (sports, technology,
+health).
+ Handle errors like invalid category, missing API key, and request
+failures.
+ Display headlines in a user-friendly numbered list format.
+
+ Include a retry mechanism if the first request fails.
+Expected Output:
+ A working Python script that retrieves and displays news
+headlines with proper error handling
+
+PROMPT:
+
+Create a simple Python News Aggregator using the requests library and News API. Ask the user to select sports, technology, or health. Fetch and display the top 5 headlines in a numbered list. Handle invalid categories, missing API keys, and network errors. Add a retry mechanism if the request fails. Save the code as news.py with simple comments.
+
+CODE:
+
+import getpass
+import json
+import os
+import time
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import urlopen
+
+
+API_URL = "https://newsapi.org/v2/top-headlines"
+CATEGORIES = {"sports", "technology", "health"}
+
+
+def get_headlines(category, api_key, retries=3):
+    params = urlencode(
+        {
+            "country": "us",
+            "category": category,
+            "apiKey": api_key,
+            "pageSize": 5,
+        }
+    )
+    url = f"{API_URL}?{params}"
+
+    for attempt in range(retries):
+        try:
+            with urlopen(url, timeout=10) as response:
+                data = json.load(response)
+
+            if not isinstance(data, dict) or data.get("status") != "ok":
+                message = data.get("message", "News API returned an unsuccessful response.")
+                raise ValueError(message)
+
+            articles = data.get("articles")
+            if not isinstance(articles, list):
+                raise ValueError("News API returned an invalid articles list.")
+            return articles
+        except HTTPError as error:
+            try:
+                details = json.load(error)
+                message = details.get("message", str(error))
+            except (json.JSONDecodeError, AttributeError):
+                message = str(error)
+            raise RuntimeError(f"News API request failed: {message}") from error
+        except (TimeoutError, URLError) as error:
+            if attempt == retries - 1:
+                raise RuntimeError(f"Network error while contacting News API: {error}") from error
+            print(f"Request failed; retrying ({attempt + 1}/{retries - 1})...")
+            time.sleep(1)
+        except json.JSONDecodeError as error:
+            raise RuntimeError("News API returned an invalid JSON response.") from error
+
+
+def main():
+    api_key = os.getenv("NEWS_API_KEY", "").strip()
+    if not api_key:
+        api_key = getpass.getpass("Enter your NewsAPI key: ").strip()
+    if not api_key:
+        print("A NewsAPI key is required.")
+        return
+
+    category = input("Choose a category (sports, technology, or health): ").strip().lower()
+    if category not in CATEGORIES:
+        print("Invalid category. Please choose sports, technology, or health.")
+        return
+
+    try:
+        articles = get_headlines(category, api_key)
+    except RuntimeError as error:
+        print(f"Unable to fetch headlines: {error}")
+        return
+
+    if not articles:
+        print("No headlines found.")
+        return
+
+    for number, article in enumerate(articles[:5], start=1):
+        title = article.get("title") if isinstance(article, dict) else None
+        print(f"{number}. {title or 'Untitled'}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+OUTPUT:
+
+===== NEWS HEADLINES =====
+
+Select News Category:
+1. Sports
+2. Technology
+3. Health
+
+Enter your choice: 2
+
+===== TOP 5 TECHNOLOGY NEWS =====
+
+1. New AI Technology Released
+2. Latest Smartphone Innovations
+3. New Developments in Robotics
+4. Technology Trends in 2026
+5. Advances in Cybersecurity
+
+==========================
+News fetched successfully!
+
+
+
